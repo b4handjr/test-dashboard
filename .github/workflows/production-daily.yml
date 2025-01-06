@@ -1,14 +1,19 @@
-name: Testops Report WEEKLY 
+name: Testops Report DAILY - Production
 
-# Sat. @4am UTC
+# Daily @8am UTC
 on:
   schedule:
-    - cron:  "0 4 * * 6" 
+    - cron:  "0 8 * * *" 
   workflow_dispatch:
+    inputs:
+      branchName:
+        description: 'Default branch'
+        required: true
+        default: 'master'
 
 jobs:
   deploy:
-    name: TestOps Report (WEEKLY)
+    name: Jira and Bugzilla TestOps Report (DAILY)
     runs-on: ubuntu-latest
 
     steps:
@@ -26,7 +31,8 @@ jobs:
           port: ${{ secrets.CLOUD_SQL_DATABASE_PORT }}
 
       - name: Install requirements 
-        run: pip install -r requirements.txt
+        run: |
+            pip install -r requirements.txt
 
       - name: Set env vars 
         run: |
@@ -37,13 +43,23 @@ jobs:
             echo "TESTRAIL_HOST=${{ secrets.TESTRAIL_HOST }}" >> $GITHUB_ENV
             echo "TESTRAIL_USERNAME=${{ secrets.TESTRAIL_USERNAME }}" >> $GITHUB_ENV
             echo "TESTRAIL_PASSWORD=${{ secrets.TESTRAIL_PASSWORD }}" >> $GITHUB_ENV
+            echo "JIRA_HOST=${{ secrets.JIRA_HOST }}" >> $GITHUB_ENV
+            echo "JIRA_USER=${{ secrets.JIRA_USER }}" >> $GITHUB_ENV
+            echo "JIRA_PASSWORD=${{ secrets.JIRA_PASSWORD }}" >> $GITHUB_ENV
             echo "GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
+            echo "BUGZILLA_API_KEY=${{ secrets.BUGZILLA_API_KEY }}" >> $GITHUB_ENV
 
-      #- name: Update DB - test runs 
-      #  run: python ./__main__.py --report-type test-run-counts --project ALL --num-days 7
 
-      - name: Update DB - test coverage 
-        run: python ./__main__.py --report-type test-case-coverage --platform mobile --project ALL 
+      - name: Jira query
+        run: python ./__main__.py --report-type jira-qa-requests
+
+      - name: Jira query
+        if: always()
+        run: python ./__main__.py --report-type jira-qa-needed
+
+      - name: Bugzilla query
+        if: always()
+        run: python ./__main__.py --report-type bugzilla-qe-verify
 
       - name: Set job log URL
         if: always()

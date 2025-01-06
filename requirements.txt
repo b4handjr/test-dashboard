@@ -1,9 +1,10 @@
 numpy
 pandas
 PyMySQL
-SQLAlchemy==1.4.46
+SQLAlchemy==1.4.49
 certifi
 charset-normalizer
 idna
 requests
 urllib3
+python-bugzilla==3.2.0
